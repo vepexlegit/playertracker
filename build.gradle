@@ -1,27 +1,37 @@
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
         maven {
             name = "forge"
-            url = "http://files.minecraftforge.net/maven"
+            url = "https://maven.minecraftforge.net/"
         }
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-SNAPSHOT'
+        classpath ('com.anatawa12.forge:ForgeGradle:1.2-1.1.+') {
+            changing = true
+        }
     }
 }
-apply plugin: 'net.minecraftforge.gradle.forge'
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+apply plugin: 'forge'
 
 version = "1.0"
-group= "de.vepexlegit.playertracker"
+group = "de.vepexlegit.playertracker"
 archivesBaseName = "PlayerTracker"
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
 
 compileJava.options.encoding = "UTF-8"
 
 minecraft {
-    version = "1.8.9-11.15.1.2318-1.8.9"
+    version = project.minecraft_version + "-" + project.forge_version
     runDir = "run"
-    mappings = "stable_20"
 }
 
 dependencies {
@@ -30,14 +40,45 @@ dependencies {
 processResources {
     inputs.property "version", project.version
     inputs.property "mcversion", project.minecraft.version
-
-    from(sourceSets.main.resources.srcDirs) {
-        include 'mcmod.info'
-
+    filesMatching('mcmod.info') {
         expand 'version':project.version, 'mcversion':project.minecraft.version
     }
+}
 
-    from(sourceSets.main.resources.srcDirs) {
-        exclude 'mcmod.info'
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = "sources"
+    from sourceSets.main.allSource
+}
+
+task devJar(type: Jar) {
+    classifier = "dev"
+    from sourceSets.main.output
+}
+
+artifacts {
+    archives sourcesJar
+    archives devJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact(jar) {
+                builtBy build
+            }
+            artifact(sourcesJar) {
+                builtBy sourcesJar
+            }
+            artifact(devJar) {
+                builtBy devJar
+            }
+        }
+    }
+
+    repositories {
     }
 }
